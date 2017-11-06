@@ -9,3 +9,7 @@ ToDos:
  - [x] Refactor logic to use wrapper that is seperate (allows for browser support)
  - [ ] Update README
  - [ ] Make browser tests pass
+
+Future:
+ - [ ] Add backwards-compatible tls1.3 support
+ - [ ] Add a parameter to let the clients choose between ECC and RSA crypto?

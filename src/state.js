@@ -53,7 +53,7 @@ module.exports = class State {
     this.handshake.read(1, (err, res) => {
       log('1.%s - reading (err=%s, res=%s, bytes=%s/8?)', state.length + 1, err, !!res, state.length)
       if (err) return cb(err)
-      if (state.length >= 9) return cb(new Error("E_PACKET_TOO_LONG: No valid data after 15 bytes"))
+      if (state.length >= 15) return cb(new Error("E_PACKET_TOO_LONG: No valid data after 15 bytes"))
       if (!res || !res.length) return this.readFromHandshake(cb, state)
 
       state.push(res)

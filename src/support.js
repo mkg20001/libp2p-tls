@@ -3,7 +3,7 @@
 const protobuf = require("protons")
 
 exports.MAGIC_MAX = 10000000000 //until tls1.3 - needed to determine which client is going to be the server
-exports.packet = protobuf('message Packet { required int64 magic = 1; required bool fin = 2; }').Packet
+exports.packet = protobuf('message Packet { required int64 magic = 1; required bool fin = 99; }').Packet
 
 const crypto = require("libp2p-crypto")
 const Id = require("peer-id")

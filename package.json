@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "description": "TLS/SSL crypto for libp2p",
   "main": "index.js",
+  "browser": {
+    "./src/wrapper.js": "./src/wrapper-browser.js"
+  },
   "scripts": {
     "lint": "aegir-lint",
     "build": "aegir-build",
