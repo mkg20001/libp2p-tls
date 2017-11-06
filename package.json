@@ -1,6 +1,6 @@
 {
   "name": "libp2p-tls",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "TLS/SSL crypto for libp2p",
   "main": "index.js",
   "browser": {
@@ -52,5 +52,16 @@
     "multistream-select": "^0.14.0",
     "pull-goodbye": "0.0.2",
     "pull-pair": "^1.1.0"
-  }
+  },
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mkg20001/libp2p-tls.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mkg20001/libp2p-tls/issues"
+  },
+  "homepage": "https://github.com/mkg20001/libp2p-tls#readme"
 }
