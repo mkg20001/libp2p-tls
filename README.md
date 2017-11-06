@@ -47,7 +47,7 @@ The current `tls` tag, usable in `multistream`.
 - `insecure: PullStream` - The insecure connection.
 - `callback: Function` - Called if an error happens during the initialization.
 
-Returns the `insecure` connection provided, wrapped with secio. This is a pull-stream.
+Returns the `insecure` connection provided, wrapped with TLS. This is a pull-stream.
 
 ### This module uses `pull-streams`
 
