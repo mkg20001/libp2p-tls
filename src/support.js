@@ -1,26 +1,80 @@
 'use strict'
 
-const mh = require('multihashing-async')
-const lp = require('pull-length-prefixed')
-const pull = require('pull-stream')
-const crypto = require('libp2p-crypto')
-const parallel = require('async/parallel')
+const protobuf = require("protons")
 
-exports.exchanges = [
-  'P-256',
-  'P-384',
-  'P-521'
-]
+exports.MAGIC_MAX = 10000000000 //until tls1.3 - needed to determine which client is going to be the server
+exports.packet = protobuf('message Packet { required int64 magic = 1; required bool fin = 2; }').Packet
 
-exports.ciphers = [
-  'AES-256',
-  'AES-128'
-]
+const crypto = require("libp2p-crypto")
+const Id = require("peer-id")
 
-exports.hashes = [
-  'SHA256',
-  'SHA512'
-]
+const forge = require("node-forge")
+const pki = forge.pki
+const pemToJwk = require('pem-jwk').pem2jwk
+const jwkToPem = require('pem-jwk').jwk2pem
+
+/**
+ * Get a random integer between `min` and `max`.
+ *
+ * @param {number} min - min number
+ * @param {number} max - max number
+ * @return {number} a random integer
+ */
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1) + min);
+}
+exports.getRandomInt = getRandomInt
+
+/**
+  * Converts a libp2p-crypto RsaPrivateKey into a PEM encoded public/private key pair
+  *
+  * @param {RsaPrivateKey} key - libp2p-crypto private key
+  * @return {Object{public, private}} object containing the pem encoded keys
+  */
+function libp2pToPem(key) {
+  return {
+    private: jwkToPem(key._key),
+    public: jwkToPem(key._publicKey)
+  }
+}
+exports.libp2pToPem = libp2pToPem
+
+/**
+  * Converts a DER encoded certificate buffer into a forge encoded certificate
+  *
+  * @param {Buffer} cert - DER certificate buffer
+  * @return {forge.Certificate} forge encoded certificate
+  */
+function loadDERForge(crt) {
+  const bytes = forge.util.createBuffer(crt)
+  const asn1 = forge.asn1.fromDer(bytes)
+  return pki.certificateFromAsn1(asn1)
+}
+exports.loadDERForge = loadDERForge
+
+/**
+  * Get a peer-id from a forge encoded certificate
+  *
+  * @param {forge.Certificate} cert - Certificate as returned by `loadDERForge`
+  * @param {cb(err, (PeerId) id)} cb - Callback that gets called with either the id or the error
+  * @return {undefined}
+  */
+function getPeerId(cert, cb) {
+  try {
+    if (!cert.verify(cert)) throw new Error("Certificate invalid!")
+    const _id = cert.subject.getField("CN").value
+    const _key = pemToJwk(pki.publicKeyToPem(cert.publicKey))
+    const key = new crypto.keys.supportedKeys.rsa.RsaPublicKey(_key)
+    Id.createFromPubKey(key.bytes, (err, id) => {
+      if (err) return cb(err)
+      if (id.toB58String() != _id) return cb(new Error("ID is not matching"))
+      return cb(null, id)
+    })
+  } catch(e) {
+    cb(e)
+  }
+}
+exports.getPeerId = getPeerId
 
 // Determines which algorithm to use.  Note:  f(a, b) = f(b, a)
 exports.theBest = (order, p1, p2) => {
@@ -46,90 +100,4 @@ exports.theBest = (order, p1, p2) => {
   }
 
   throw new Error('No algorithms in common!')
-}
-
-exports.makeMacAndCipher = (target, callback) => {
-  parallel([
-    (cb) => makeMac(target.hashT, target.keys.macKey, cb),
-    (cb) => makeCipher(target.cipherT, target.keys.iv, target.keys.cipherKey, cb)
-  ], (err, macAndCipher) => {
-    if (err) {
-      return callback(err)
-    }
-
-    target.mac = macAndCipher[0]
-    target.cipher = macAndCipher[1]
-    callback()
-  })
-}
-
-function makeMac (hash, key, callback) {
-  crypto.hmac.create(hash, key, callback)
-}
-
-function makeCipher (cipherType, iv, key, callback) {
-  if (cipherType === 'AES-128' || cipherType === 'AES-256') {
-    return crypto.aes.create(key, iv, callback)
-  }
-
-  // TODO: figure out if Blowfish is needed and if so find a library for it.
-  callback(new Error(`unrecognized cipher type: ${cipherType}`))
-}
-
-exports.selectBest = (local, remote, cb) => {
-  exports.digest(Buffer.concat([
-    remote.pubKeyBytes,
-    local.nonce
-  ]), (err, oh1) => {
-    if (err) {
-      return cb(err)
-    }
-
-    exports.digest(Buffer.concat([
-      local.pubKeyBytes,
-      remote.nonce
-    ]), (err, oh2) => {
-      if (err) {
-        return cb(err)
-      }
-
-      const order = Buffer.compare(oh1, oh2)
-
-      if (order === 0) {
-        return cb(new Error('you are trying to talk to yourself'))
-      }
-
-      cb(null, {
-        curveT: exports.theBest(order, local.exchanges, remote.exchanges),
-        cipherT: exports.theBest(order, local.ciphers, remote.ciphers),
-        hashT: exports.theBest(order, local.hashes, remote.hashes),
-        order
-      })
-    })
-  })
-}
-
-exports.digest = (buf, cb) => {
-  mh.digest(buf, 'sha2-256', buf.length, cb)
-}
-
-exports.write = function write (state, msg, cb) {
-  cb = cb || (() => {})
-  pull(
-    pull.values([
-      msg
-    ]),
-    lp.encode({fixed: true, bytes: 4}),
-    pull.collect((err, res) => {
-      if (err) {
-        return cb(err)
-      }
-      state.shake.write(res[0])
-      cb()
-    })
-  )
-}
-
-exports.read = function read (reader, cb) {
-  lp.decodeFromReader(reader, {fixed: true, bytes: 4}, cb)
 }
