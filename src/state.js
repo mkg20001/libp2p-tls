@@ -1,27 +1,20 @@
 'use strict'
 
-process.on("uncaughtException", e => console.error(e))
-
-const tls = require("tls")
-
-const toPull = require("stream-to-pull-stream")
 const sslConfig = require("ssl-config")("modern")
 
 const debug = require("debug")
 const log = debug("libp2p:tls")
 
-const toSocket = require("pull-stream-to-net-socket")
 const handshake = require("pull-handshake")
 const {
   selfSignedCert,
-  getPeerIdFromSocket,
   createMagic,
   getMagic
 } = require("./core")
 
 const deferred = require('pull-defer')
 
-module.exports = class TLS {
+module.exports = class State {
   constructor(local, key, timeout) {
     log('0 - init')
 
@@ -68,40 +61,6 @@ module.exports = class TLS {
       if (!pres) return this.readFromHandshake(cb, state)
 
       cb(null, pres.magic)
-    })
-  }
-  establishConnection(conn, isServer, cb) {
-    const opt = isServer ? {
-      createServer: () => tls.createServer(this.tlsOptions),
-      prefire: true,
-      inverse: true
-    } : {
-      createClient: dest => tls.connect(Object.assign(dest, this.tlsOptions)),
-      prefire: true
-    }
-    toSocket(conn, opt, (err, conn) => {
-      if (err) return cb(err)
-      log('2.1 - determine peer identity')
-      getPeerIdFromSocket(conn, (err, id) => {
-        log('2.2 - indentified peer as %s', id.toB58String())
-        conn = toPull.duplex(conn)
-        conn.id = id
-        return cb(null, conn)
-      })
-    })
-  }
-  encrypt(cb) {
-    this.readFromHandshake((err, res) => {
-      if (err) return cb(err)
-      log('1.9 - magic: ours=%s, theirs=%s', this.magic, res)
-      if (res === this.magic) return cb(new Error("E_MAGIC_MATCH: The magic number matches! Please try to be more lucky next time!")) //TODO: try again instead of failure
-      this.isServer = res < this.magic.value
-      log('2 - establish tls connection (server %s)', this.isServer)
-      this.establishConnection(this.handshake.rest(), this.isServer, (err, conn) => {
-        if (err) return cb(err)
-        log('3 - finalize')
-        this.secure.resolve(conn)
-      })
     })
   }
 }

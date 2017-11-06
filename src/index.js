@@ -2,7 +2,8 @@
 
 const pull = require("pull-stream")
 const Connection = require('interface-connection').Connection
-const TLS = require('./tls')
+const State = require('./state')
+const handshake = require('./handshake')
 
 module.exports = {
   tag: '/tls/1.0.0',
@@ -27,16 +28,16 @@ module.exports = {
       }
     }
 
-    const tls = new TLS(local, key, 60 * 1000 * 5)
+    const state = new State(local, key, 60 * 1000 * 5)
 
     pull(
-      tls.shake,
+      state.shake,
       insecure,
-      tls.shake
+      state.shake
     )
 
-    tls.encrypt(callback)
+    handshake(state, callback)
 
-    return new Connection(tls.secure, insecure)
+    return new Connection(state.secure, insecure)
   }
 }

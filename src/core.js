@@ -147,4 +147,4 @@ function getMagic(_packet) {
   return pres
 }
 
-module.exports = {selfSignedCert, getPeerIdFromSocket, createMagic, getMagic}
+module.exports = {selfSignedCert, getPeerIdFromSocket, createMagic, getMagic, getPeerId}

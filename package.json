@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "aegir-lint",
     "build": "aegir-build",
-    "test": "gulp test",
+    "test": "gulp test:node",
     "test:node": "gulp test:node",
     "test:browser": "gulp test:browser",
     "release": "gulp release --dom",
