@@ -17,7 +17,9 @@
     "release-major": "gulp release --type major",
     "coverage": "aegir-coverage",
     "coverage-publish": "aegir-coverage publish",
-    "bench": "node benchmarks/send.js"
+    "bench": "node benchmarks/send.js",
+    "snyk-protect": "snyk protect",
+    "prepare": "npm run snyk-protect"
   },
   "keywords": [
     "tls",
@@ -40,7 +42,8 @@
     "pull-handshake": "^1.1.4",
     "pull-stream-to-net-socket": "^1.0.0",
     "ssl-config": "^1.0.0",
-    "stream-to-pull-stream": "^1.7.2"
+    "stream-to-pull-stream": "^1.7.2",
+    "snyk": "^1.316.1"
   },
   "devDependencies": {
     "aegir": "^11.0.2",
@@ -63,5 +66,6 @@
   "bugs": {
     "url": "https://github.com/mkg20001/libp2p-tls/issues"
   },
-  "homepage": "https://github.com/mkg20001/libp2p-tls#readme"
+  "homepage": "https://github.com/mkg20001/libp2p-tls#readme",
+  "snyk": true
 }
